@@ -32,14 +32,22 @@ class MAB():
         print(x_n, x_bar_n_1, n)
         return (x_bar_n_1 + (x_n - x_bar_n_1)/n)
 
-    def greedy(self, optimistic_init: bool=False):
+    def greedy(self, optimistic_init: bool=False, ucb1: bool=False):
         self.pull_all_arms_first(optimistic_init)
         while sum(self.num_samples) < self.pulls:
-            best_perf_arm = self.rng.choice(
-                np.where(self.perf_avg==self.perf_avg.max())[0]
-            )
-            
-            print(best_perf_arm, self.perf_avg)
+            if not ucb1:
+                best_perf_arm = self.rng.choice(
+                    np.where(self.perf_avg==self.perf_avg.max())[0]
+                )            
+                print(best_perf_arm, self.perf_avg)
+            else:
+                self.perf_ucb1 = self.perf_avg + np.sqrt(2*np.log(self.pulls)/self.num_samples)
+                best_perf_arm = self.rng.choice(
+                    np.where(self.perf_ucb1==self.perf_ucb1.max())[0]
+                )            
+                print(best_perf_arm, self.perf_ucb1)
+
+
             self.last_sample[best_perf_arm] = self.outcomes[
                 best_perf_arm,
                 self.num_samples[best_perf_arm]
@@ -83,7 +91,7 @@ class MAB():
 bandits = BanditDGP(prob_success=[0.2,0.5,0.75])
 mab = MAB(dgp=bandits, pulls=10000)
 # mab.epsilon_greedy(epsilon=0.999999)
-mab.greedy(optimistic_init=True)
+mab.greedy(ucb1=True)
 print(mab.perf_avg, sum(mab.reward))
 
 
