@@ -1,5 +1,19 @@
 import numpy as np
 from bandit_dgp import BanditDGP
+from enum import Enum
+from pydantic import BaseModel
+from scipy.stats import beta
+from typing import List, Union
+
+class GreedyMethodsEnum(Enum):
+    greedy='greedy'
+    optimistic_init='optimistic_init'
+    ucb1='ucb1'
+    thompson_sampling='thompson_sampling'
+
+class GreedyMethodsInput(BaseModel):
+    method: GreedyMethodsEnum = GreedyMethodsEnum.greedy
+
 
 class MAB():
 
@@ -32,21 +46,35 @@ class MAB():
         print(x_n, x_bar_n_1, n)
         return (x_bar_n_1 + (x_n - x_bar_n_1)/n)
 
-    def greedy(self, optimistic_init: bool=False, ucb1: bool=False):
-        self.pull_all_arms_first(optimistic_init)
+    def greedy(self, method: str='greedy', priors: np.array=None):
+        # validate method
+        GreedyMethodsInput(method=method)
+        if method=='thompson_sampling':
+            if not priors:
+                self.priors=np.ones((self.n_arms,2))
+            else:
+                self.priors=priors
+        
+        # pull all arms first
+        self.pull_all_arms_first(optimistic_init= method=='optimistic_init')
+
         while sum(self.num_samples) < self.pulls:
-            if not ucb1:
+            if method in ['greedy', 'optimistic_init']:
                 best_perf_arm = self.rng.choice(
                     np.where(self.perf_avg==self.perf_avg.max())[0]
                 )            
                 print(best_perf_arm, self.perf_avg)
-            else:
+            elif method=='ucb1':
                 self.perf_ucb1 = self.perf_avg + np.sqrt(2*np.log(self.pulls)/self.num_samples)
                 best_perf_arm = self.rng.choice(
                     np.where(self.perf_ucb1==self.perf_ucb1.max())[0]
                 )            
                 print(best_perf_arm, self.perf_ucb1)
-
+            elif method=='thompson_sampling':
+                self.perf_sample = self.rng.beta(self.priors[:,0], self.priors[:,1])
+                best_perf_arm = self.rng.choice(
+                    np.where(self.perf_sample==self.perf_sample.max())[0]
+                )
 
             self.last_sample[best_perf_arm] = self.outcomes[
                 best_perf_arm,
@@ -59,8 +87,10 @@ class MAB():
                 x_n=self.last_sample[best_perf_arm],
                 n=self.num_samples[best_perf_arm]
             )
-            
             self.perf_avg[best_perf_arm] = new_perf_avg
+            if method=='thompson_sampling':
+                self.priors[best_perf_arm,0] += self.last_sample[best_perf_arm]
+                self.priors[best_perf_arm,1] += 1-self.last_sample[best_perf_arm]
 
     def epsilon_greedy(self, epsilon: int=0.1, decay_rate: int=None):
         self.pull_all_arms_first()
@@ -89,9 +119,9 @@ class MAB():
 
 
 bandits = BanditDGP(prob_success=[0.2,0.5,0.75])
-mab = MAB(dgp=bandits, pulls=10000)
+mab = MAB(dgp=bandits, pulls=1000)
 # mab.epsilon_greedy(epsilon=0.999999)
-mab.greedy(ucb1=True)
+mab.greedy(method='thompson_sampling')
 print(mab.perf_avg, sum(mab.reward))
 
 
