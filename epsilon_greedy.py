@@ -34,10 +34,15 @@ class MAB():
         self.num_samples = np.zeros(self.n_arms, dtype=int)
         self.last_sample = np.zeros(self.n_arms) * np.nan
     
+    def pull_dgp_arm(self, arm_to_pull):
+        arm_outcome_index = self.num_samples[arm_to_pull]
+        return self.outcomes[arm_to_pull, arm_outcome_index]
+
+    
     def pull_all_arms_first(self, optimistic_init: bool=False):
         self.reward = []
         for i in range(self.n_arms):
-            self.last_sample[i] = self.outcomes[i,0] * (not optimistic_init) + 0.99 * (optimistic_init)
+            self.last_sample[i] = self.pull_dgp_arm(i) * (not optimistic_init) + 0.99 * (optimistic_init)
             self.num_samples[i] = 1
             self.perf_avg[i] = self.last_sample[i]
             self.reward += [self.outcomes[i,0]]
@@ -76,10 +81,7 @@ class MAB():
                     np.where(self.perf_sample==self.perf_sample.max())[0]
                 )
 
-            self.last_sample[best_perf_arm] = self.outcomes[
-                best_perf_arm,
-                self.num_samples[best_perf_arm]
-            ]
+            self.last_sample[best_perf_arm] = self.pull_dgp_arm(best_perf_arm)
             self.reward += [self.last_sample[best_perf_arm]]
             self.num_samples[best_perf_arm] += 1
             new_perf_avg = self.update_perf_avg(
@@ -103,10 +105,7 @@ class MAB():
             p_pull[~best_perf_arm_arr] = epsilon/(self.n_arms - n_best_perf_arms)
             arm_to_pull = self.rng.choice(a=range(self.n_arms),size=1,p=p_pull)[0]
 
-            self.last_sample[arm_to_pull] = self.outcomes[
-                arm_to_pull,
-                self.num_samples[arm_to_pull]
-            ]
+            self.last_sample[arm_to_pull] = self.pull_dgp_arm(arm_to_pull)
             self.reward += [self.last_sample[arm_to_pull]]
             self.num_samples[arm_to_pull] += 1
             new_perf_avg = self.update_perf_avg(
@@ -119,9 +118,9 @@ class MAB():
 
 
 bandits = BanditDGP(prob_success=[0.2,0.5,0.75])
-mab = MAB(dgp=bandits, pulls=1000)
+mab = MAB(dgp=bandits, pulls=2000)
 # mab.epsilon_greedy(epsilon=0.999999)
 mab.greedy(method='thompson_sampling')
-print(mab.perf_avg, sum(mab.reward))
+print(mab.priors, sum(mab.reward))
 
 
