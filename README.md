@@ -5,4 +5,7 @@ Contains:
 - `epsilon_greed`: Which has the following algorithms for exploration-exploitation:
   - greedy (can have optimistic initial values)
   - epsilon-greedy (can include a decay rate for epsilon)
-  - 
+- `rl.ipynb`: Which contains basic examples and code for reinforcement learning (from Hands-on Machine Learning by Aurelien)including:
+  - Basic policy gradient
+  - Q-values conceptualisation and formulation
+  - Deep Q-learning
