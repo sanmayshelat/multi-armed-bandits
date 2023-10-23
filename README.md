@@ -9,3 +9,4 @@ Contains:
   - Basic policy gradient
   - Q-values conceptualisation and formulation
   - Deep Q-learning
+- `rl.py`: Which contains a class-based approach to solving the basic CartPole problem
