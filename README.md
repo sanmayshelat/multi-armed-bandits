@@ -1,7 +1,7 @@
 A repository created while learning the fundamentals of multi-armed bandits.
 
 Contains:
-- `bandit_dgp`: Which simulates outcomes from pulls of multi-armed bandits (Bernoulli trials)
+- `bandit_dgp`: Which simulates outcomes from pulls of multi-armed bandits (Bernoulli trials and Gaussian outcomes)
 - `mab_algo`: Which has the following algorithms for exploration-exploitation:
   - greedy (can have optimistic initial values)
   - epsilon-greedy (can include a decay rate for epsilon)
